@@ -1,6 +1,7 @@
 package by.resliv.traveladvisor.controller;
 
 
+import by.resliv.traveladvisor.ApplicationConstants;
 import by.resliv.traveladvisor.dto.CityDTO;
 import by.resliv.traveladvisor.dto.ExistedEntity;
 import by.resliv.traveladvisor.dto.NewEntity;
@@ -28,6 +29,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.persistence.EntityNotFoundException;
 import javax.validation.constraints.Pattern;
 import java.net.URI;
+import java.text.MessageFormat;
 import java.util.List;
 
 @RestController
@@ -36,6 +38,7 @@ import java.util.List;
 public class CityController {
 
     private static final String NUMBER_PATTERN = "^[1-9]\\d*$";
+    private static final String PAGE_PATTERN = "^[0-9]\\d*$";
     private static final String VALIDATION_MSG_FOR_ID = "Invalid request";
 
     private final CityService cityService;
@@ -79,11 +82,20 @@ public class CityController {
 
 
     @GetMapping(params = {"page", "size"})
-    public ResponseEntity<List<CityDTO>> findAll(@RequestParam("page") int page, @RequestParam("size") int size, UriComponentsBuilder ucb) {
-        Page<CityDTO> resultPage = cityService.findAll(PageRequest.of(page, size));
+    public ResponseEntity<List<CityDTO>> findAll(@RequestParam("page") @Pattern(regexp = PAGE_PATTERN,
+            message = VALIDATION_MSG_FOR_ID, flags = Pattern.Flag.CASE_INSENSITIVE) String page,
+                                                 @RequestParam("size")
+                                                 @Pattern(regexp = NUMBER_PATTERN,
+                                                         message = VALIDATION_MSG_FOR_ID,
+                                                         flags = Pattern.Flag.CASE_INSENSITIVE) String size,
+                                                 UriComponentsBuilder ucb) {
+        int pageValue = Integer.parseInt(page);
+        int sizeValue = Integer.parseInt(size);
+        Page<CityDTO> resultPage = cityService.findAll(PageRequest.of(pageValue, sizeValue));
         int totalPages = resultPage.getTotalPages();
-        if (page > totalPages) {
-            throw new EntityNotFoundException();
+        if (pageValue > totalPages) {
+            String msg = MessageFormat.format(ApplicationConstants.RESOURCE_NOT_FOUND_BY_PAGE, page);
+            throw new EntityNotFoundException(msg);
         }
         if (resultPage.getContent().isEmpty()) {
             return ResponseEntity.noContent().build();

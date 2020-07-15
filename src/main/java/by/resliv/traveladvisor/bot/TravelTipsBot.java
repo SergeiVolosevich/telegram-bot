@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 public class TravelTipsBot extends TelegramLongPollingBot {
 
     private static final String FAILED_TO_SEND_RESPONSE = "Failed to send response. Cause:";
+
     private final Map<HandlerType, InputHandler> handlers;
 
     public TravelTipsBot(List<InputHandler> handlers) {
