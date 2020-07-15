@@ -33,7 +33,7 @@ public class CityDTO implements Serializable {
     private String name;
 
     @NotBlank(message = "Please provide a city description", groups = {NewEntity.class, ExistedEntity.class})
-    @Length(min = 50, max = 2000, message = "Length of full text of news must be between 50 - 2000 characters",
+    @Length(min = 50, max = 2000, message = "Length of city description must be between 50 - 2000 characters",
             groups = {NewEntity.class, ExistedEntity.class})
     private String description;
 }
