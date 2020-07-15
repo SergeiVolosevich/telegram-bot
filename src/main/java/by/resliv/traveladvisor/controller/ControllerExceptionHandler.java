@@ -30,14 +30,19 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
+import static by.resliv.traveladvisor.ApplicationConstants.MEDIA_TYPE_IS_NOT_SUPPORTED_TEMPLATE;
+import static by.resliv.traveladvisor.ApplicationConstants.METHOD_NOT_SUPPORTED_TEMPLATE;
+import static by.resliv.traveladvisor.ApplicationConstants.NO_HANDLER_FOUND_TEMPLATE;
+import static by.resliv.traveladvisor.ApplicationConstants.PARAMETER_IS_MISSING_TEMPLATE;
+
 @RestControllerAdvice
 @Log4j2
 public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
+
     private static final String FAILED_TO_EXECUTE_METHOD_CAUSE = "Failed to execute method. Cause: ";
-    private static final String METHOD_NOT_SUPPORTED_MSG = "Method {0} not supported. Supported methods: {1}";
-    private static final String NO_HANDLER_FOUND_FOR = "No handler found for {0} {1}";
     private static final String MALFORMED_JSON_REQUEST = "Malformed JSON request";
     private static final String ERROR_OCCURRED = "Internal error occurred";
+
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
@@ -49,8 +54,7 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
                 .stream()
                 .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
                 .collect(Collectors.toList());
-        String path = request.getDescription(false);
-        ApiErrorResponse response = buildResponseMessage(status, errors, path);
+        ApiErrorResponse response = buildResponse(request, errors, status);
         return new ResponseEntity<>(response, headers, status);
     }
 
@@ -58,14 +62,13 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleBindException(BindException ex, HttpHeaders headers, HttpStatus status,
                                                          WebRequest request) {
+        log.error(FAILED_TO_EXECUTE_METHOD_CAUSE, ex);
         List<String> errors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
                 .collect(Collectors.toList());
-        log.error(FAILED_TO_EXECUTE_METHOD_CAUSE, ex);
-        String path = request.getDescription(false);
-        ApiErrorResponse response = buildResponseMessage(status, errors, path);
+        ApiErrorResponse response = buildResponse(request, errors, status);
         return handleExceptionInternal(ex, response, headers, status, request);
     }
 
@@ -79,19 +82,17 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
         String supportedMediaTypes = ex.getSupportedMediaTypes().stream()
                 .map(MimeType::getType)
                 .collect(Collectors.joining(", "));
-        String msg = MessageFormat.format("{0} media type is not supported. Supported media types are {1}",
-                contentType, supportedMediaTypes);
-        String path = request.getDescription(false);
-        ApiErrorResponse response = buildResponseMessage(status, Collections.singletonList(msg), path);
+        String msg = MessageFormat.format(MEDIA_TYPE_IS_NOT_SUPPORTED_TEMPLATE, contentType, supportedMediaTypes);
+        ApiErrorResponse response = buildResponse(request, Collections.singletonList(msg), status);
         return new ResponseEntity<>(response, headers, status);
     }
 
     @ExceptionHandler(UnsatisfiedServletRequestParameterException.class)
-    public ResponseEntity<Object> handleUnsatisfiedServletRequestParameterException(UnsatisfiedServletRequestParameterException ex, WebRequest request) {
+    public ResponseEntity<Object> handleUnsatisfiedRequestParamException(UnsatisfiedServletRequestParameterException ex,
+                                                                         WebRequest request) {
         log.error(FAILED_TO_EXECUTE_METHOD_CAUSE, ex);
         HttpStatus status = HttpStatus.BAD_REQUEST;
-        String path = request.getDescription(false);
-        ApiErrorResponse response = buildResponseMessage(status, Collections.singletonList(ex.getMessage()), path);
+        ApiErrorResponse response = buildResponse(request, Collections.singletonList(ex.getMessage()), status);
         return new ResponseEntity<>(response, new HttpHeaders(), status);
     }
 
@@ -99,9 +100,8 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex,
                                                                           HttpHeaders headers, HttpStatus status,
                                                                           WebRequest request) {
-        final String error = MessageFormat.format("{0} parameter is missing.", ex.getParameterName());
-        String path = request.getDescription(false);
-        ApiErrorResponse response = buildResponseMessage(status, Collections.singletonList(error), path);
+        final String error = MessageFormat.format(PARAMETER_IS_MISSING_TEMPLATE, ex.getParameterName());
+        ApiErrorResponse response = buildResponse(request, Collections.singletonList(error), status);
         return new ResponseEntity<>(response, new HttpHeaders(), status);
     }
 
@@ -112,36 +112,33 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
                 .stream()
                 .map(ConstraintViolation::getMessage)
                 .collect(Collectors.toList());
-        String path = request.getDescription(false);
-        ApiErrorResponse response = buildResponseMessage(HttpStatus.BAD_REQUEST, errors, path);
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        ApiErrorResponse response = buildResponse(request, errors, status);
         return new ResponseEntity<>(response, new HttpHeaders(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<Object> handleEntityNotFoundException(EntityNotFoundException ex, WebRequest request) {
         log.error(FAILED_TO_EXECUTE_METHOD_CAUSE, ex);
-        String path = request.getDescription(false);
-        ApiErrorResponse response = buildResponseMessage(HttpStatus.NOT_FOUND,
-                Collections.singletonList(ex.getMessage()), path);
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        ApiErrorResponse response = buildResponse(request, Collections.singletonList(ex.getMessage()), status);
         return new ResponseEntity<>(response, new HttpHeaders(), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(UniqueConstraintException.class)
     public ResponseEntity<Object> handleEmptyResultDataAccessException(UniqueConstraintException ex, WebRequest request) {
         log.error(FAILED_TO_EXECUTE_METHOD_CAUSE, ex);
-        String path = request.getDescription(false);
-        ApiErrorResponse response = buildResponseMessage(HttpStatus.NOT_FOUND,
-                Collections.singletonList(ex.getMessage()), path);
-        return new ResponseEntity<>(response, new HttpHeaders(), HttpStatus.NOT_FOUND);
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        ApiErrorResponse response = buildResponse(request, Collections.singletonList(ex.getMessage()), status);
+        return new ResponseEntity<>(response, new HttpHeaders(), status);
     }
 
     @Override
     protected ResponseEntity<Object> handleNoHandlerFoundException(NoHandlerFoundException ex, HttpHeaders headers,
                                                                    HttpStatus status, WebRequest request) {
         log.error(FAILED_TO_EXECUTE_METHOD_CAUSE, ex);
-        String errorMessage = MessageFormat.format(NO_HANDLER_FOUND_FOR, ex.getHttpMethod(), ex.getRequestURL());
-        String path = request.getDescription(false);
-        ApiErrorResponse response = buildResponseMessage(status, Collections.singletonList(errorMessage), path);
+        String errorMessage = MessageFormat.format(NO_HANDLER_FOUND_TEMPLATE, ex.getHttpMethod(), ex.getRequestURL());
+        ApiErrorResponse response = buildResponse(request, Collections.singletonList(errorMessage), status);
         return new ResponseEntity<>(response, new HttpHeaders(), status);
     }
 
@@ -149,8 +146,7 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleAll(Exception ex, WebRequest request) {
         log.error(FAILED_TO_EXECUTE_METHOD_CAUSE, ex);
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-        String path = request.getDescription(false);
-        ApiErrorResponse response = buildResponseMessage(status, Collections.singletonList(ERROR_OCCURRED), path);
+        ApiErrorResponse response = buildResponse(request, Collections.singletonList(ERROR_OCCURRED), status);
         return new ResponseEntity<>(response, new HttpHeaders(), status);
     }
 
@@ -159,9 +155,7 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
                                                                   HttpHeaders headers, HttpStatus status,
                                                                   WebRequest request) {
         log.error(FAILED_TO_EXECUTE_METHOD_CAUSE, ex);
-        String path = request.getDescription(false);
-        ApiErrorResponse response = buildResponseMessage(status, Collections.singletonList(MALFORMED_JSON_REQUEST),
-                path);
+        ApiErrorResponse response = buildResponse(request, Collections.singletonList(MALFORMED_JSON_REQUEST), status);
         return new ResponseEntity<>(response, headers, status);
     }
 
@@ -173,11 +167,15 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
         String unsupportedMethodName = ex.getMethod();
         StringJoiner joiner = new StringJoiner(", ");
         Objects.requireNonNull(ex.getSupportedHttpMethods()).forEach(method -> joiner.add(method.name()));
-        String msg = MessageFormat.format(METHOD_NOT_SUPPORTED_MSG, unsupportedMethodName, joiner);
-        String path = request.getDescription(false);
+        String msg = MessageFormat.format(METHOD_NOT_SUPPORTED_TEMPLATE, unsupportedMethodName, joiner);
         headers.setAllow(ex.getSupportedHttpMethods());
-        ApiErrorResponse response = buildResponseMessage(status, Collections.singletonList(msg), path);
+        ApiErrorResponse response = buildResponse(request, Collections.singletonList(msg), status);
         return new ResponseEntity<>(response, headers, status);
+    }
+
+    private ApiErrorResponse buildResponse(WebRequest request, List<String> errors, HttpStatus status) {
+        String path = request.getDescription(false);
+        return buildResponseMessage(status, errors, path);
     }
 
     private ApiErrorResponse buildResponseMessage(HttpStatus status, List<String> errors, String path) {

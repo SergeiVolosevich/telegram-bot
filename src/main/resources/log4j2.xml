@@ -2,22 +2,40 @@
 <Configuration>
     <Properties>
         <property name="console">%d{yyyy-MM-dd HH:mm:ss} %t %level %logger{5} Method:%M - %msg%n</property>
+        <property name="file">%d{yyyy-MM-dd HH:mm:ss} %t %level %logger{5} Method:%M - %msg%n</property>
     </Properties>
 
     <Appenders>
+        <RollingFile name="RollingFile" fileName="logs/travel_advisor.log"
+                     filePattern="logs/${date:yyyy-MM}/news-%d{MM-dd-yyyy}-%i.log.gz">
+            <PatternLayout pattern="${file}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="6" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="5 MB"/>
+            </Policies>
+        </RollingFile>
+        <RollingFile name="RollingFileForHibernate" fileName="logs/travel_advisor_hibernate.log"
+                     filePattern="logs/${date:yyyy-MM}/news_hibernate-%d{MM-dd-yyyy}-%i.log.gz">
+            <PatternLayout pattern="${file}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="6" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="5 MB"/>
+            </Policies>
+        </RollingFile>
         <Console name="Console">
             <PatternLayout pattern="${console}"/>
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
-            <AppenderRef ref="Console"/>
+        <Logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="DEBUG" additivity="false">
+            <AppenderRef ref="RollingFileForHibernate"/>
         </Logger>
-        <Logger name="org.hibernate.SQL" level="TRACE" additivity="false">
-            <AppenderRef ref="Console"/>
+        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <AppenderRef ref="RollingFileForHibernate"/>
         </Logger>
         <Root level="INFO" additivity="false">
-            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile" level="ERROR"/>
+            <AppenderRef ref="Console" level="INFO"/>
         </Root>
     </Loggers>
 </Configuration>

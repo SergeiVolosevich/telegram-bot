@@ -2,7 +2,7 @@ package by.resliv.traveladvisor.bot;
 
 import by.resliv.traveladvisor.dto.CityDTO;
 import by.resliv.traveladvisor.service.CityService;
-import by.resliv.traveladvisor.util.RequestUtil;
+import by.resliv.traveladvisor.util.TelegramBotUtil;
 import lombok.AllArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
@@ -12,7 +12,6 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -23,6 +22,7 @@ public class InputTextHandler implements InputHandler {
     private static final String INVALID_CITY_NAME = "invalid.city.name";
     private static final String CITY_NOT_FOUND = "city.not.found";
     private static final String CITY_LIST = "city.list";
+    private static final String CITY_NAME_PATTERN = "^[а-яА-ЯёЁa-zA-Z]+(?:[\\s-][а-яА-ЯёЁa-zA-Z]+)*$";
 
     private CityService cityService;
     private MessageSource messageSource;
@@ -30,12 +30,9 @@ public class InputTextHandler implements InputHandler {
     @Override
     public BotApiMethod<Message> handle(Message message) {
         String textMessage = message.getText();
-        SendMessage response = RequestUtil.createResponseForBot(message);
-        String locale = message.getFrom().getLanguageCode();
-        if (Objects.isNull(locale)) {
-            locale = Locale.getDefault().toString();
-        }
-        Pattern pattern = Pattern.compile("^[а-яА-ЯёЁa-zA-Z]+(?:[\\s-][а-яА-ЯёЁa-zA-Z]+)*$");
+        SendMessage response = TelegramBotUtil.createResponse(message);
+        String locale = TelegramBotUtil.getLocaleFromRequest(message);
+        Pattern pattern = Pattern.compile(CITY_NAME_PATTERN);
         if (!pattern.asPredicate().test(textMessage)) {
             String reply = messageSource.getMessage(INVALID_CITY_NAME, null, new Locale(locale));
             response.setText(reply);

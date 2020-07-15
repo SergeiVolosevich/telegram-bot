@@ -51,11 +51,12 @@ public class CityController {
     @GetMapping(value = "/{id}")
     public CityDTO getById(@PathVariable("id") @Pattern(regexp = NUMBER_PATTERN,
             message = VALIDATION_MSG_FOR_ID, flags = Pattern.Flag.CASE_INSENSITIVE) String id) {
-        return cityService.getById(Long.parseLong(id));
+        long cityId = Long.parseLong(id);
+        return cityService.getById(cityId);
     }
 
 
-    @PostMapping()
+    @PostMapping
     public ResponseEntity<CityDTO> save(@Validated(NewEntity.class) @RequestBody CityDTO cityDTO,
                                         UriComponentsBuilder ucb) {
         CityDTO savedCity = cityService.save(cityDTO);
@@ -70,14 +71,14 @@ public class CityController {
                                   flags = Pattern.Flag.CASE_INSENSITIVE) String id, @Validated(ExistedEntity.class)
                           @RequestBody CityDTO cityDTO, UriComponentsBuilder ucb) {
         return cityService.update(cityDTO);
-
     }
 
     @DeleteMapping(value = "/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable("id") @Pattern(regexp = NUMBER_PATTERN,
             message = VALIDATION_MSG_FOR_ID, flags = Pattern.Flag.CASE_INSENSITIVE) String id) {
-        cityService.delete(Long.parseLong(id));
+        long cityId = Long.parseLong(id);
+        cityService.delete(cityId);
     }
 
 

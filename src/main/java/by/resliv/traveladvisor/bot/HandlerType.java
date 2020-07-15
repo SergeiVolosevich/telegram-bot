@@ -12,6 +12,4 @@ public enum HandlerType {
 
     private String name;
     private boolean isCommand;
-
-
 }

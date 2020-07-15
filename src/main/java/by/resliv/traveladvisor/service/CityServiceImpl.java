@@ -1,6 +1,5 @@
 package by.resliv.traveladvisor.service;
 
-import by.resliv.traveladvisor.ApplicationConstants;
 import by.resliv.traveladvisor.dto.CityDTO;
 import by.resliv.traveladvisor.entity.City;
 import by.resliv.traveladvisor.exception.UniqueConstraintException;
@@ -18,6 +17,10 @@ import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static by.resliv.traveladvisor.ApplicationConstants.ENTITY_NOT_EXIST_TEMPLATE;
+import static by.resliv.traveladvisor.ApplicationConstants.FAILED_TO_FIND_ENTITY_BY_ID;
+import static by.resliv.traveladvisor.ApplicationConstants.UNIQUE_KEY_CONSTRAINT_TEMPLATE;
 
 @Service
 @AllArgsConstructor
@@ -55,7 +58,7 @@ public class CityServiceImpl implements CityService {
         String name = city.getName();
         City foundCity = cityRepository.findByNameIgnoreCase(name);
         if (Objects.nonNull(foundCity)) {
-            String msg = MessageFormat.format(ApplicationConstants.UNIQUE_KEY_CONSTRAINT_TEMPLATE, "City",
+            String msg = MessageFormat.format(UNIQUE_KEY_CONSTRAINT_TEMPLATE, CITY,
                     "name - " + name);
             throw new UniqueConstraintException(msg);
         }
@@ -82,8 +85,8 @@ public class CityServiceImpl implements CityService {
         return cityRepository.findById(id)
                 .map(optionalCity -> modelMapper.map(optionalCity, CityDTO.class))
                 .orElseThrow(() -> {
-                    log.error(ApplicationConstants.FAILED_TO_FIND_ENTITY_BY_ID, CITY, id, CITY);
-                    String msg = MessageFormat.format(ApplicationConstants.ENTITY_NOT_EXIST_TEMPLATE,
+                    log.error(FAILED_TO_FIND_ENTITY_BY_ID, CITY, id, CITY);
+                    String msg = MessageFormat.format(ENTITY_NOT_EXIST_TEMPLATE,
                             CITY, id);
                     return new EntityNotFoundException(msg);
                 });

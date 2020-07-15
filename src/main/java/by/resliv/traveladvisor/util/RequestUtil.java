@@ -3,8 +3,6 @@ package by.resliv.traveladvisor.util;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Message;
 
 import java.net.URI;
 import java.text.MessageFormat;
@@ -97,12 +95,4 @@ public final class RequestUtil {
                 .encode()
                 .toUriString();
     }
-
-    public static SendMessage createResponseForBot(Message message) {
-        SendMessage sendMessage = new SendMessage();
-        sendMessage.enableMarkdown(true);
-        sendMessage.setChatId(message.getChatId());
-        return sendMessage;
-    }
-
 }
